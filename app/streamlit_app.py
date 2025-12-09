@@ -3,11 +3,11 @@ import os
 import pandas as pd
 import numpy as np
 import joblib
-
 from src.data_prep import load_listings, quick_clean, find_listings_path
 
-MODEL_PATH = "models/rf_model.joblib"
-PREPROC_PATH = "models/preproc.joblib"
+# Define paths for model and preprocessor
+MODEL_PATH = os.path.join(os.path.dirname(__file__), '..', 'models', 'rf_model.joblib')
+PREPROC_PATH = os.path.join(os.path.dirname(__file__), '..', 'models', 'preproc.joblib')
 
 st.set_page_config(page_title="Airbnb Price Predictor", layout="wide")
 st.title("Airbnb Price Predictor — Quick Demo")
