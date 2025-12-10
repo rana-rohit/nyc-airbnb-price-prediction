@@ -1,17 +1,34 @@
-import streamlit as st
+import sys
 import os
+
+# Setup path for Streamlit Cloud compatibility - MUST be before src imports
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
+import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
-import sys
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if ROOT_DIR not in sys.path:
-    sys.path.append(ROOT_DIR)
 from src.data_prep import load_listings, quick_clean, find_listings_path
 
 # Define paths for model and preprocessor
 MODEL_PATH = os.path.join(os.path.dirname(__file__), '..', 'models', 'rf_model.joblib')
 PREPROC_PATH = os.path.join(os.path.dirname(__file__), '..', 'models', 'preproc.joblib')
+
+# Cache data loading to avoid reloading on every interaction
+@st.cache_data
+def load_data_cached(path):
+    """Load and return listings data (cached)"""
+    return load_listings(path)
+
+# Cache model loading to avoid reloading on every interaction
+@st.cache_resource
+def load_model_cached():
+    """Load and return model and preprocessor (cached)"""
+    if os.path.exists(MODEL_PATH) and os.path.exists(PREPROC_PATH):
+        return joblib.load(MODEL_PATH), joblib.load(PREPROC_PATH)
+    return None, None
 
 st.set_page_config(page_title="Airbnb Price Predictor", layout="wide")
 st.title("Airbnb Price Predictor — Quick Demo")
@@ -22,14 +39,14 @@ uploaded = st.sidebar.file_uploader("Upload listings.csv (optional)", type=['csv
 use_pretrained = st.sidebar.checkbox("Use pretrained model (models/rf_model.joblib)", value=os.path.exists(MODEL_PATH))
 train_local = st.sidebar.button("Train model locally (slow)")
 
-# Load data
+# Load data (cached)
 data_path = None
 if uploaded:
     df = pd.read_csv(uploaded)
 else:
     data_path = find_listings_path()
     if data_path:
-        df = load_listings(data_path)
+        df = load_data_cached(data_path)
     else:
         df = pd.DataFrame()
 
@@ -42,14 +59,14 @@ if train_local:
         st.error("No data supplied for training.")
     else:
         train(input_path, model_out=MODEL_PATH, preproc_out=PREPROC_PATH)
+        st.cache_resource.clear()  # Clear cache to reload new model
         st.success("Training completed. Restart the app or toggle use_pretrained.")
 
-# load model if requested
+# Load model (cached)
 model = None
 preproc = None
-if use_pretrained and os.path.exists(MODEL_PATH) and os.path.exists(PREPROC_PATH):
-    model = joblib.load(MODEL_PATH)
-    preproc = joblib.load(PREPROC_PATH)
+if use_pretrained:
+    model, preproc = load_model_cached()
 
 # Tabs
 tab1, tab2, tab3 = st.tabs(["EDA", "Predict Single", "Batch Predict"])
@@ -74,11 +91,55 @@ with tab2:
     st.header("Predict single listing")
     if df.empty:
         st.info("No dataset loaded; you can still enter values manually.")
-    # build simple form
+    
+    # Initialize session state for coordinates
+    if 'selected_lat' not in st.session_state:
+        st.session_state.selected_lat = float(df['latitude'].mean()) if 'latitude' in df.columns and not df.empty else 40.7128
+    if 'selected_lon' not in st.session_state:
+        st.session_state.selected_lon = float(df['longitude'].mean()) if 'longitude' in df.columns and not df.empty else -74.0060
+    
+    # Interactive map for location selection
+    st.subheader("Click on the map to select location")
+    import folium
+    from streamlit_folium import st_folium
+    
+    # Create map centered on NYC
+    m = folium.Map(
+        location=[st.session_state.selected_lat, st.session_state.selected_lon],
+        zoom_start=11,
+        tiles="CartoDB positron"
+    )
+    
+    # Add marker for current selection
+    folium.Marker(
+        [st.session_state.selected_lat, st.session_state.selected_lon],
+        popup=f"Selected: ({st.session_state.selected_lat:.4f}, {st.session_state.selected_lon:.4f})",
+        icon=folium.Icon(color="red", icon="home")
+    ).add_to(m)
+    
+    # Display map and capture clicks
+    map_data = st_folium(m, width=700, height=400, key="location_map")
+    
+    # Update coordinates if user clicked on map
+    if map_data and map_data.get("last_clicked"):
+        st.session_state.selected_lat = map_data["last_clicked"]["lat"]
+        st.session_state.selected_lon = map_data["last_clicked"]["lng"]
+    
+    # Display selected coordinates
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Latitude", f"{st.session_state.selected_lat:.6f}")
+    with col2:
+        st.metric("Longitude", f"{st.session_state.selected_lon:.6f}")
+    
+    latitude = st.session_state.selected_lat
+    longitude = st.session_state.selected_lon
+    
+    st.divider()
+    
+    # Other form inputs
     neighbourhood = st.text_input("Neighbourhood", value=str(df['neighbourhood'].dropna().unique()[0]) if 'neighbourhood' in df.columns and df['neighbourhood'].dropna().shape[0]>0 else "Unknown")
     room_type = st.selectbox("Room type", options=['Entire home/apt','Private room','Shared room','Hotel room'])
-    latitude = st.number_input("Latitude", value=float(df['latitude'].mean()) if 'latitude' in df.columns else 0.0)
-    longitude = st.number_input("Longitude", value=float(df['longitude'].mean()) if 'longitude' in df.columns else 0.0)
     minimum_nights = st.number_input("Minimum nights", value=int(df['minimum_nights'].median()) if 'minimum_nights' in df.columns else 1)
     number_of_reviews = st.number_input("Number of reviews", value=int(df['number_of_reviews'].median()) if 'number_of_reviews' in df.columns else 0)
     reviews_per_month = st.number_input("Reviews per month", value=float(df['reviews_per_month'].median()) if 'reviews_per_month' in df.columns else 0.0)

@@ -8,9 +8,15 @@ DEFAULT_COLS = ['neighbourhood', 'latitude', 'longitude', 'room_type',
                 'availability_365', 'id']
 
 def find_listings_path():
-    # try common paths
+    # Use absolute paths relative to this module's location
     import os
-    candidates = ['data/listings.csv', 'data/Data1/listings.csv', 'data/listings_clean.csv']
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    candidates = [
+        os.path.join(base_dir, 'data', 'sample_listings.csv'),
+        os.path.join(base_dir, 'data', 'listings.csv'),
+        os.path.join(base_dir, 'data', 'Data1', 'listings.csv'),
+        os.path.join(base_dir, 'data', 'listings_clean.csv'),
+    ]
     for c in candidates:
         if os.path.exists(c):
             return c
