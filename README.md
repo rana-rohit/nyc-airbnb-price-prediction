@@ -12,7 +12,7 @@ This project analyses publicly available Airbnb listings data for New York City 
 2. How do room type, location, and booking behaviour influence price?  
 3. Can we build a reasonably accurate model to predict nightly price from listing features?  
 
-All work is implemented in Python using pandas, seaborn/matplotlib, and scikit‑learn in a single, reproducible Jupyter notebook (`NYC_Airbnb_EDA_ML.ipynb`).  
+All work is implemented in Python using pandas, seaborn/matplotlib, and scikit‑learn in a single, reproducible Jupyter notebook (`notebooks/NYC_Airbnb_Price_Prediction.ipynb`).  
 
 ---
 
