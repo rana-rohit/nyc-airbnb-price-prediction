@@ -25,12 +25,12 @@ def build_preprocessor(df):
     ])
     # create OneHotEncoder compatible with installed sklearn
     def make_ohe():
-    # prefer sparse_output for new sklearn, fallback to sparse for older
+        """Create OneHotEncoder compatible with installed sklearn version."""
         try:
-        # try newest API first
+            # try newest API first (sparse_output for sklearn >= 1.2)
             return OneHotEncoder(handle_unknown='ignore', sparse_output=False)
         except TypeError:
-        # older sklearn uses 'sparse' argument
+            # older sklearn uses 'sparse' argument
             return OneHotEncoder(handle_unknown='ignore', sparse=False)
 
     cat_pipe = Pipeline([

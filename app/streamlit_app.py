@@ -52,15 +52,18 @@ else:
 
 if train_local:
     st.info("Training a model locally (this may take several minutes). If dataset is large, consider using --sample.")
-    st.spinner()
     from src.train_model import train
     input_path = uploaded if uploaded else data_path
     if input_path is None:
         st.error("No data supplied for training.")
     else:
-        train(input_path, model_out=MODEL_PATH, preproc_out=PREPROC_PATH)
-        st.cache_resource.clear()  # Clear cache to reload new model
-        st.success("Training completed. Restart the app or toggle use_pretrained.")
+        with st.spinner("Training model... Please wait."):
+            try:
+                train(input_path, model_out=MODEL_PATH, preproc_out=PREPROC_PATH)
+                st.cache_resource.clear()  # Clear cache to reload new model
+                st.success("Training completed! Refresh the page to use the new model.")
+            except Exception as e:
+                st.error(f"Training failed: {e}")
 
 # Load model (cached)
 model = None

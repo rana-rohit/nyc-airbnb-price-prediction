@@ -41,7 +41,8 @@ AIRBNB_PROJECT/
 ├── data/                         # Data files (Git LFS tracked)
 │   ├── listings.csv
 │   ├── calendar.csv
-│   └── reviews.csv
+│   ├── reviews.csv
+│   └── sample_listings.csv      # Smaller sample for testing
 │
 ├── models/                       # Trained ML models
 │   ├── rf_model.joblib
@@ -54,9 +55,11 @@ AIRBNB_PROJECT/
 │   ├── histogram.png
 │   ├── boxplot.png
 │   ├── scatterplot.png
-│   └── heatmap.png
+│   ├── heatmap.png
+│   └── price_distribution.png
 │
 ├── src/                          # Python modules
+│   ├── __init__.py
 │   ├── data_prep.py
 │   └── train_model.py
 │
