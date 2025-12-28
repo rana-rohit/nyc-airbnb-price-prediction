@@ -4,8 +4,6 @@
 
 Exploratory Data Analysis (EDA) and machine learning on New York City Airbnb listings to understand pricing drivers and predict nightly prices.
 
-**🚀 [Try the Live App](https://nyc-airbnb-price-prediction.streamlit.app/)**
-
 ---
 
 ## Project overview
